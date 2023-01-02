@@ -1,4 +1,6 @@
 import React, { Component } from 'react';
+import Modal from './Modal/Modal';
+import Button from './Button/Button';
 import Searchbar from './Searchbar/Searchbar';
 import ImageGallery from './ImageGallery/ImageGallery';
 import ImageGalleryItem from '../components/ImageGalleryItem/ImageGalleryItem';
@@ -7,7 +9,11 @@ const API_KEY = `31697968-406cab2af0ae45e7393df2600`;
 
 export class App extends Component {
   state = {
+    page: 1,
+    query: '',
     images: [],
+    modalOpen: false,
+    largeImage: '',
   };
 
   handleGetRequest = async event => {
@@ -17,17 +23,54 @@ export class App extends Component {
     const request = await fetch(BASE_URL);
     const response = await request.json();
 
-    this.setState({ images: response.hits });
-    console.log(this.state.images);
+    this.setState({
+      page: 1,
+      loading: false,
+      error: null,
+      images: response.hits,
+    });
+  };
+
+  openModal = largeImage => {
+    this.setState({
+      modalOpen: true,
+      largeImage,
+    });
+  };
+
+  closeModal = () => {
+    this.setState({
+      modalOpen: false,
+    });
+  };
+
+  loadMore = () => {
+    this.setState(({ page }) => {
+      return {
+        page: page + 1,
+      };
+    });
   };
 
   render() {
+    const { openModal, closeModal } = this;
+    const { modalOpen, largeImageURL, isLoading, images } = this.state;
+
     return (
       <div className={style[`App`]}>
+        {modalOpen && (
+          <Modal close={closeModal} largeImageURL={largeImageURL} />
+        )}
         <Searchbar handleGetRequest={this.handleGetRequest} />
         <ImageGallery>
-          <ImageGalleryItem images={this.state.images} />
+          <ImageGalleryItem
+            images={this.state.images}
+            onClick={openModal}
+          ></ImageGalleryItem>
         </ImageGallery>
+        {!isLoading && images.length > 0 && (
+          <Button onLoadMore={this.loadMore} />
+        )}
       </div>
     );
   }

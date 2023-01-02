@@ -1,13 +1,18 @@
 import React from 'react';
 import style from './ImageGalleryItem.module.css';
 
-const ImageGalleryItem = ({ images, tag }) => {
-  return images.map(({ id, webformatURL }) => (
-    <li key={id} className={style['ImageGalleryItem']}>
+const ImageGalleryItem = ({ images, onClick }) => {
+  return images.map(({ id, webformatURL, largeImageURL }) => (
+    <li
+      className={style['ImageGalleryItem']}
+      key={id}
+      onClick={() => onClick(id)}
+    >
       <img
         className={style['ImageGalleryItem-image']}
         src={webformatURL}
-        alt={tag}
+        data-source={largeImageURL}
+        alt=""
       />
     </li>
   ));
