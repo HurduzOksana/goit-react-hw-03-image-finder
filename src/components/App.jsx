@@ -1,77 +1,96 @@
 import React, { Component } from 'react';
-import Modal from './Modal/Modal';
-import Button from './Button/Button';
 import Searchbar from './Searchbar/Searchbar';
 import ImageGallery from './ImageGallery/ImageGallery';
-import ImageGalleryItem from '../components/ImageGalleryItem/ImageGalleryItem';
-import style from './App.module.css';
-const API_KEY = `31697968-406cab2af0ae45e7393df2600`;
+import Button from './Button/Button';
+import Loader from './Loader/Loader';
+import axios from 'axios';
+
+const API_KEY = '31697968-406cab2af0ae45e7393df2600';
 
 export class App extends Component {
   state = {
-    page: 1,
+    gallery: [],
     query: '',
-    images: [],
-    modalOpen: false,
-    largeImage: '',
+    page: 1,
+    isLoading: false,
+    error: false,
   };
 
-  handleGetRequest = async event => {
-    event.preventDefault();
-    const searchTerm = event.target.elements.searchValue.value;
-    const BASE_URL = `https://pixabay.com/api/?q=${searchTerm}&page=1&key=${API_KEY}&image_type=photo&orientation=horizontal&per_page=12`;
-    const request = await fetch(BASE_URL);
-    const response = await request.json();
-
+  onChangeQuery = query => {
     this.setState({
+      query,
       page: 1,
-      loading: false,
-      error: null,
-      images: response.hits,
+      gallery: [],
     });
   };
 
-  openModal = largeImage => {
-    this.setState({
-      modalOpen: true,
-      largeImage,
-    });
+  fetchRequest = async () => {
+    try {
+      const { query, page } = this.state;
+      const response = await axios.get(
+        `https://pixabay.com/api/?q=${query}&page=${page}&key=${API_KEY}&image_type=photo&orientation=horizontal&per_page=12`
+      );
+
+      return response.data.hits;
+    } catch (error) {
+      this.setState({
+        error: true,
+      });
+    }
   };
 
-  closeModal = () => {
-    this.setState({
-      modalOpen: false,
-    });
-  };
+  componentDidUpdate(prevProps, prevState) {
+    const { query, page } = this.state;
+
+    if (query !== prevState.query) {
+      this.setState({
+        isLoading: true,
+      });
+      const request = async () => {
+        const result = await this.fetchRequest();
+        this.setState({
+          gallery: [...result],
+          isLoading: false,
+        });
+      };
+      request();
+    }
+
+    if (page !== prevState.page) {
+      this.setState({
+        isLoading: true,
+      });
+      const request = async () => {
+        const result = await this.fetchRequest();
+        this.setState(state => ({
+          gallery: [...state.gallery, ...result],
+          isLoading: false,
+        }));
+      };
+      request();
+    }
+  }
 
   loadMore = () => {
-    this.setState(({ page }) => {
-      return {
-        page: page + 1,
-      };
-    });
+    this.setState(state => ({
+      page: state.page + 1,
+    }));
   };
 
   render() {
-    const { openModal, closeModal } = this;
-    const { modalOpen, largeImageURL, isLoading, images } = this.state;
-
+    const { gallery, isLoading, error } = this.state;
     return (
-      <div className={style[`App`]}>
-        {modalOpen && (
-          <Modal close={closeModal} largeImageURL={largeImageURL} />
+      <>
+        <Searchbar onChangeQuery={this.onChangeQuery} />
+        {error && <h1>something gone wrong, try again later</h1>}
+        {!!gallery.length && !error && (
+          <>
+            <ImageGallery gallery={gallery} />
+            {!isLoading && <Button loadMore={this.loadMore} />}
+          </>
         )}
-        <Searchbar handleGetRequest={this.handleGetRequest} />
-        <ImageGallery>
-          <ImageGalleryItem
-            images={this.state.images}
-            onClick={openModal}
-          ></ImageGalleryItem>
-        </ImageGallery>
-        {!isLoading && images.length > 0 && (
-          <Button onLoadMore={this.loadMore} />
-        )}
-      </div>
+        {isLoading && <Loader />}
+      </>
     );
   }
 }

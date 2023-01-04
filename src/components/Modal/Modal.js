@@ -1,24 +1,40 @@
-import { Component } from 'react';
-import style from './Modal.module.css';
+import React, { useEffect } from 'react';
+import styles from './Modal.module.css';
+import PropTypes from 'prop-types';
 
-class Modal extends Component {
-  closeModal = ({ target, currentTarget }) => {
-    if (target === currentTarget) {
-      this.props.close();
+const Modal = ({ closeModal, children }) => {
+  const modalCloseFunc = e => {
+    if (e.target.nodeName === 'IMG') {
+      return;
     }
+    closeModal();
   };
-  render() {
-    const { largeImageURL } = this.props;
-    const { closeModal } = this;
 
-    return (
-      <div className={style['Overlay']} onClick={closeModal}>
-        <div className={style['Modal']} onClick={closeModal}>
-          <img src={largeImageURL} alt="sdsgs" />
-        </div>
+  const escCloseModal = e => {
+    if (e.key !== 'Escape') {
+      return;
+    }
+    closeModal();
+  };
+
+  useEffect(() => {
+    window.addEventListener('keydown', escCloseModal);
+    return () => {
+      window.removeEventListener('keydown', escCloseModal);
+    };
+  });
+
+  return (
+    <div className={styles.Overlay} onClick={modalCloseFunc}>
+      <div className={styles.Modal}>
+        <>{children}</>
       </div>
-    );
-  }
-}
+    </div>
+  );
+};
+
+Modal.propTypes = {
+  closeModal: PropTypes.func.isRequired,
+};
 
 export default Modal;
